@@ -155,8 +155,8 @@ async function cloudLoad(){
 async function cloudLogin(email,password,isSignup){
  try{
   $('authSubmit').disabled=true;authMessage('Kontakter databasen …');
-  const endpoint=isSignup?'/auth/v1/signup':'/auth/v1/token?grant_type=password';
-  const options=isSignup?{email,password,options:{email_redirect_to:location.origin+location.pathname}}:{email,password};
+  const endpoint=isSignup?'/auth/v1/signup?redirect_to='+encodeURIComponent(location.origin+location.pathname):'/auth/v1/token?grant_type=password';
+  const options={email,password};
   const result=await cloudRequest(endpoint,{method:'POST',body:options});
   if(!result.access_token){authMessage('Brukeren er registrert. Sjekk e-posten din og bekreft kontoen. Deretter logger du inn.');return}
   saveCloudSession({...result,expires_at:Math.floor(Date.now()/1000)+(result.expires_in||3600)});
