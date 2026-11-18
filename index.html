@@ -7,7 +7,7 @@
 @media print{
  @page{size:A4 portrait;margin:17mm}
  body{background:white;color:#111;font-family:Arial,sans-serif}
- body>header,body>main,body>footer,body>.modal-bg{display:none!important}
+ body>header,body>main,body>footer,body>.modal-bg,body>.auth-panel,body>.cloud-status{display:none!important}
  #printSheet{display:block!important;font-size:19pt;line-height:1.4}
  #printSheet h1{font-size:25pt;margin:0 0 5mm}
  #printSheet .print-meta{font-size:17pt;margin-bottom:10mm;border-bottom:2px solid #222;padding-bottom:5mm}
@@ -107,7 +107,7 @@ const CLOUD_KEY='sb_publishable_yqbi_IGTz0UG-pLv8nd2Cw_0VQUgsPj';
 const CLOUD_SESSION_KEY='jj-cloud-session-v1';
 let cloudSession=null,cloudUser=null,cloudPending=Promise.resolve(),cloudReady=false;
 const authMessage=(message,isError=false)=>{const out=$('authMessage');out.textContent=message;out.style.color=isError?'#ac2925':'#35546f'};
-const cloudHeaders=(token=cloudSession?.access_token)=>({'apikey':CLOUD_KEY,'Authorization':'Bearer '+(token||CLOUD_KEY),'Content-Type':'application/json'});
+const cloudHeaders=(token=cloudSession?.access_token)=>({...{'apikey':CLOUD_KEY,'Content-Type':'application/json'},...(token?{'Authorization':'Bearer '+token}:{})});
 async function cloudRequest(path,{method='GET',body=null,token,prefer}={}){
  const h=cloudHeaders(token);if(prefer)h.Prefer=prefer;
  const response=await fetch(CLOUD_URL+path,{method,headers:h,body:body===null?undefined:JSON.stringify(body)});
