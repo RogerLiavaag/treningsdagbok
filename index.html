@@ -15,17 +15,17 @@
 .link-form label{display:grid;gap:4px;font-weight:600;font-size:14px}
 .link-form input{width:100%}
 .link-editor-actions{display:flex;flex-wrap:wrap;gap:6px}
-.link-muted{color:#68788d}
+.link-muted{color:#68788d}.print-settings{padding:14px;background:#f6f8fb;border:1px solid #dce3eb;border-radius:9px;margin:12px 0 20px}.print-settings label{font-weight:600;display:block;margin:10px 0 6px}.print-settings select{min-width:210px}.admin-links-settings[hidden]{display:none!important}
 #printSheet{display:none}
 @media print{
  @page{size:A4 portrait;margin:17mm}
  body{background:white;color:#111;font-family:Arial,sans-serif}
  body>header,body>main,body>footer,body>.modal-bg,body>.auth-panel,body>.cloud-status{display:none!important}
- #printSheet{display:block!important;font-size:19pt;line-height:1.4}
- #printSheet h1{font-size:25pt;margin:0 0 5mm}
- #printSheet .print-meta{font-size:17pt;margin-bottom:10mm;border-bottom:2px solid #222;padding-bottom:5mm}
+ #printSheet{display:block!important;font-size:var(--print-body-size,19pt);line-height:1.4}
+ #printSheet h1{font-size:var(--print-title-size,25pt);margin:0 0 5mm}
+ #printSheet .print-meta{font-size:var(--print-meta-size,17pt);margin-bottom:10mm;border-bottom:2px solid #222;padding-bottom:5mm}
  #printSheet section{margin:0 0 9mm;break-inside:avoid;page-break-inside:avoid}
- #printSheet h2{font-size:20pt;margin:0 0 2mm}
+ #printSheet h2{font-size:var(--print-heading-size,20pt);margin:0 0 2mm}
  #printSheet .print-body{white-space:pre-wrap;overflow-wrap:anywhere} #printSheet .print-body ul{list-style:disc; padding-left:1.2em} #printSheet .print-body strong,#printSheet .print-body b{font-weight:700}
  #printSheet .print-empty{color:#666}
 }
@@ -35,7 +35,7 @@
 <div id="authPanel" class="auth-panel"><h2>Logg inn i treningsdagboken</h2><p>Treningsøktene lagres privat i Supabase. Siden er offentlig, men innholdet krever egen innlogging.</p><form id="authForm"><label>E-postadresse<input id="authEmail" type="email" required autocomplete="username"></label><label>Passord<input id="authPassword" type="password" required minlength="6" autocomplete="current-password"></label><label>Velg handling<select id="authMode"><option value="login">Logg inn</option><option value="signup">Opprett konto (første gang)</option></select></label><button class="primary" id="authSubmit" type="submit">Logg inn</button></form><p id="authMessage" role="status"></p><small>Første gang: Opprett konto, bekreft e-posten og logg inn. Ikke send passordet ditt i ChatGPT.</small></div>
 <div id="cloudStatus" class="cloud-status" hidden><strong>☁️ Tilkoblet Supabase</strong><span id="cloudAccount"></span><button type="button" id="importLocal" hidden>Importer tidligere lokale økter</button><button type="button" id="cloudLogout">Logg ut</button></div>
 <main><div class="notice"><b>Skybasert treningsdagbok:</b> Treningsøktene lagres i din private Supabase-database etter innlogging. GitHub-siden og programkoden er fortsatt offentlig tilgjengelige, men selve treningsøktene beskyttes med tilgangskontroll. Bruk «Eksporter historikk» for ekstra sikkerhetskopi.</div>
-<div class="controls"><label>Parti<select id="party"><option>Viderekomne</option><option>Voksne</option><option>Ungdom</option><option>Barn</option></select></label><label>Treningsdato (DD.MM.YYYY)<span class="date-entry"><input type="text" id="dateDisplay" inputmode="numeric" placeholder="DD.MM.YYYY" maxlength="10" aria-label="Dato DD.MM.YYYY"><input type="date" id="date" lang="nb-NO" aria-label="Åpne kalender"></span></label><button id="today">I dag</button><button id="new">Ny økt</button><button id="export">Eksporter historikk</button><button id="importBtn">Importer</button><button id="printBtn" class="primary">🖨️ Skriv ut planen</button><button id="pdfBtn">📄 Lagre som PDF</button><button id="linksBtn" type="button">🔗 Lenker</button><button id="linksSettingsBtn" type="button" hidden>⚙️ Innstillinger</button><input hidden type="file" accept=".json,application/json" id="import"></div>
+<div class="controls"><label>Parti<select id="party"><option>Viderekomne</option><option>Voksne</option><option>Ungdom</option><option>Barn</option></select></label><label>Treningsdato (DD.MM.YYYY)<span class="date-entry"><input type="text" id="dateDisplay" inputmode="numeric" placeholder="DD.MM.YYYY" maxlength="10" aria-label="Dato DD.MM.YYYY"><input type="date" id="date" lang="nb-NO" aria-label="Åpne kalender"></span></label><button id="today">I dag</button><button id="new">Ny økt</button><button id="export">Eksporter historikk</button><button id="importBtn">Importer</button><button id="printBtn" class="primary">🖨️ Skriv ut planen</button><button id="pdfBtn">📄 Lagre som PDF</button><button id="linksBtn" type="button">🔗 Lenker</button><button id="linksSettingsBtn" type="button">⚙️ Innstillinger</button><input hidden type="file" accept=".json,application/json" id="import"></div>
 <nav class="party-tabs" id="partyTabs" aria-label="Bytt raskt mellom partier"><button type="button" class="party-tab" data-party="Voksne" aria-pressed="false">Voksne</button><button type="button" class="party-tab" data-party="Viderekomne" aria-pressed="false">Viderekomne</button><button type="button" class="party-tab" data-party="Ungdom" aria-pressed="false">Ungdom</button><button type="button" class="party-tab" data-party="Barn" aria-pressed="false">Barn</button></nav>
 <div class="columns"><section class="panel"><div class="panel-head"><small>TIDLIGERE TRENINGER · SAMME PARTI</small><h2 id="prevTitle">Ingen tidligere trening</h2><div class="previous-nav"><button id="prevOlder" type="button" aria-label="Eldre trening">← Eldre</button><button id="prevNewer" type="button" aria-label="Nyere trening">Nyere →</button><span class="muted" id="prevCount"></span></div></div><div class="panel-body"><div class="section"><h3>Oppvarming</h3><div class="readonly" id="prevWarm"></div></div><div class="section"><h3>Trening</h3><div class="readonly" id="prevMain"></div></div><div class="section"><h3>Avslutning</h3><div class="readonly" id="prevEnd"></div></div><div class="section"><h3>Merknad</h3><div class="readonly" id="prevNote"></div></div><button id="copy">Kopier forrige økt til valgt dato</button></div></section>
 <section class="panel"><div class="current-party-banner" aria-live="polite"><strong id="partyHeading">TRENINGSPLAN – VIDEREKOMNE</strong><span id="partyDateHeading">18.11.2026</span></div><div class="panel-head"><small>VALGT TRENING · <span id="currentParty"></span></small><h2 id="currentTitle"></h2></div><div class="panel-body">
@@ -49,8 +49,9 @@
 <div id="sharedLinksModal" class="link-modal-bg" role="dialog" aria-modal="true" aria-labelledby="linksHeading">
 <div class="link-dialog"><div class="top-row"><h2 id="linksHeading">Felles lenker</h2><button type="button" id="linksClose" aria-label="Lukk">✕ Lukk</button></div><p class="link-muted">Felles ressurser for alle registrerte brukere. Lenkene åpnes i en ny fane.</p><div id="linksList" aria-live="polite"></div></div></div>
 <div id="sharedSettingsModal" class="link-modal-bg" role="dialog" aria-modal="true" aria-labelledby="linksSettingsHeading">
-<div class="link-dialog"><div class="top-row"><h2 id="linksSettingsHeading">Innstillinger – felles lenker</h2><button type="button" id="linksSettingsClose" aria-label="Lukk">✕ Lukk</button></div><p class="link-muted">Bare administrator kan legge til, redigere, flytte og slette lenker.</p>
-<form id="linkForm" class="link-form"><input type="hidden" id="linkEditId"><label>Navn på lenken<input id="linkTitle" maxlength="140" required placeholder="F.eks. Instruksjonsvideoer"></label><label>Nettadresse (https://)<input id="linkUrl" type="url" required maxlength="2048" placeholder="https://..."></label><label>Beskrivelse (valgfritt)<input id="linkDescription" maxlength="300" placeholder="Kort beskrivelse"></label><div class="actions"><button type="submit" class="primary" id="linkSave">Lagre lenke</button><button type="button" id="linkCancelEdit">Avbryt redigering</button></div></form><p id="linkSettingsMessage" role="status" class="link-muted"></p><h3>Eksisterende lenker</h3><div id="linkSettingsList"></div></div></div>
+<div class="link-dialog"><div class="top-row"><h2 id="linksSettingsHeading">Innstillinger</h2><button type="button" id="linksSettingsClose" aria-label="Lukk">✕ Lukk</button></div><div class="print-settings"><h3>Utskrift og PDF</h3><label for="printFontSize">Skriftstørrelse på treningsplanen</label><select id="printFontSize"><option value="small">Liten (15 pkt)</option><option value="medium">Middels (19 pkt – som før)</option><option value="large">Stor (23 pkt)</option></select><p class="link-muted" id="printSizeMessage">Valget gjelder både utskrift og PDF.</p></div>
+<div id="adminLinksSettings" class="admin-links-settings" hidden><h3>Felles lenker</h3><p class="link-muted">Bare administrator kan legge til, redigere, flytte og slette lenker.</p>
+<form id="linkForm" class="link-form"><input type="hidden" id="linkEditId"><label>Navn på lenken<input id="linkTitle" maxlength="140" required placeholder="F.eks. Instruksjonsvideoer"></label><label>Nettadresse (https://)<input id="linkUrl" type="url" required maxlength="2048" placeholder="https://..."></label><label>Beskrivelse (valgfritt)<input id="linkDescription" maxlength="300" placeholder="Kort beskrivelse"></label><div class="actions"><button type="submit" class="primary" id="linkSave">Lagre lenke</button><button type="button" id="linkCancelEdit">Avbryt redigering</button></div></form><p id="linkSettingsMessage" role="status" class="link-muted"></p><h3>Eksisterende lenker</h3><div id="linkSettingsList"></div></div></div></div>
 <article id="printSheet" aria-label="Utskriftsversjon av valgt treningsplan">
 <h1>Treningsplan – Ju Jitsu</h1><div class="print-meta"><strong id="printParty"></strong> · <span id="printDate"></span></div>
 <section><h2>Oppvarming</h2><div class="print-body" id="printWarm"></div></section>
@@ -102,9 +103,15 @@ fields.forEach(f=>$(f).addEventListener('input',()=>{$('saved').textContent='Lag
 $('save').onclick=()=>{capture();render()};
 $('delete').onclick=()=>{if(data[id()]&&confirm('Slette denne treningsøkten?')){delete data[id()];persist();queueCloud(id(),null);render()}};
 $('copy').onclick=()=>{let p=previous();if(!p)return;if(fields.some(f=>hasText($(f)))&&!confirm('Erstatte innholdet med forrige trening?'))return;fields.forEach(f=>$(f).innerHTML=displayHTML(data[p],f));capture();render()};
-function preparePrint(){capture();$('printParty').textContent=$('party').value;$('printDate').textContent=fmt($('date').value);for(let f of fields){let target=$('print'+f.charAt(0).toUpperCase()+f.slice(1));target.innerHTML=hasText($(f))?cleanHTML($(f).innerHTML):'–';target.classList.toggle('print-empty',!hasText($(f)))}$('printNoteSection').style.display=hasText($('note'))?'block':'none'}
+const PRINT_SIZES={small:{body:'15pt',title:'22pt',meta:'14pt',heading:'17pt'},medium:{body:'19pt',title:'25pt',meta:'17pt',heading:'20pt'},large:{body:'23pt',title:'29pt',meta:'20pt',heading:'24pt'}};
+function printPreferenceKey(){return 'jj-print-size-v1-'+(cloudUser?.id||'local')}
+function getPrintSize(){const value=localStorage.getItem(printPreferenceKey());return Object.prototype.hasOwnProperty.call(PRINT_SIZES,value)?value:'medium'}
+function setPrintSize(size){if(!PRINT_SIZES[size])return;localStorage.setItem(printPreferenceKey(),size);applyPrintSize()}
+function applyPrintSize(){const size=PRINT_SIZES[getPrintSize()],sheet=$('printSheet');sheet.style.setProperty('--print-body-size',size.body);sheet.style.setProperty('--print-title-size',size.title);sheet.style.setProperty('--print-meta-size',size.meta);sheet.style.setProperty('--print-heading-size',size.heading)}
+$('printFontSize').onchange=()=>{setPrintSize($('printFontSize').value);$('printSizeMessage').textContent='Lagret! Dette valget brukes ved neste utskrift og PDF.'};
+function preparePrint(){applyPrintSize();capture();$('printParty').textContent=$('party').value;$('printDate').textContent=fmt($('date').value);for(let f of fields){let target=$('print'+f.charAt(0).toUpperCase()+f.slice(1));target.innerHTML=hasText($(f))?cleanHTML($(f).innerHTML):'–';target.classList.toggle('print-empty',!hasText($(f)))}$('printNoteSection').style.display=hasText($('note'))?'block':'none'}
 $('printBtn').onclick=()=>{preparePrint();window.print()};
-$('pdfBtn').onclick=()=>{preparePrint();alert('I utskriftsvinduet: Velg «Lagre som PDF» som skriver/mål, og trykk Lagre. Da får du en PDF med stor skrift.');window.print()};
+$('pdfBtn').onclick=()=>{preparePrint();alert('I utskriftsvinduet: Velg «Lagre som PDF» som skriver/mål, og trykk Lagre. PDF-en bruker skriftstørrelsen du valgte under Innstillinger.');window.print()};
 window.addEventListener('beforeprint',preparePrint);
 $('export').onclick=()=>{capture();let url=URL.createObjectURL(new Blob([JSON.stringify({version:1,exported:new Date().toISOString(),sessions:data},null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='ju-jitsu-treningsdagbok-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)};
 $('importBtn').onclick=()=>$('import').click();
@@ -208,7 +215,7 @@ $('authForm').onsubmit=event=>{
 $('authMode').onchange=()=>{$('authSubmit').textContent=$('authMode').value==='signup'?'Opprett konto':'Logg inn';authMessage('')};
 $('cloudLogout').onclick=async()=>{
  try{if(cloudSession)await cloudRequest('/auth/v1/logout',{method:'POST',token:await cloudAccessToken()})}catch{}
- cloudSession=null;cloudUser=null;cloudReady=false;sharedLinks=[];sharedIsAdmin=false;localStorage.removeItem(CLOUD_SESSION_KEY);$('linksSettingsBtn').hidden=true;closeLinkModals();
+ cloudSession=null;cloudUser=null;cloudReady=false;sharedLinks=[];sharedIsAdmin=false;localStorage.removeItem(CLOUD_SESSION_KEY);$('adminLinksSettings').hidden=true;closeLinkModals();
  data={};lastKey='';render();$('authPanel').hidden=false;$('cloudStatus').hidden=true;document.body.classList.add('cloud-locked');authMessage('Du er logget ut.');
 };
 $('importLocal').onclick=async()=>{
@@ -267,8 +274,8 @@ async function loadSharedLinks(){
    cloudRequest('/rest/v1/app_administrators?select=user_id&user_id=eq.'+encodeURIComponent(cloudUser.id),{token})
   ]);
   sharedLinks=Array.isArray(links)?links:[];sharedIsAdmin=Array.isArray(admins)&&admins.some(a=>a.user_id===cloudUser.id);
-  $('linksSettingsBtn').hidden=!sharedIsAdmin;renderSharedLinks();renderLinksSettings();
- }catch(error){sharedLinks=[];sharedIsAdmin=false;$('linksSettingsBtn').hidden=true;renderSharedLinks();authMessage('Felles lenker kunne ikke lastes: '+error.message,true)}
+  $('adminLinksSettings').hidden=!sharedIsAdmin;renderSharedLinks();renderLinksSettings();
+ }catch(error){sharedLinks=[];sharedIsAdmin=false;$('adminLinksSettings').hidden=true;renderSharedLinks();authMessage('Felles lenker kunne ikke lastes: '+error.message,true)}
 }
 async function saveLinkRow(payload,id){
  const token=await cloudAccessToken();
@@ -279,7 +286,7 @@ async function saveLinkRow(payload,id){
 $('linksBtn').onclick=async()=>{await loadSharedLinks();showLinkModal('sharedLinksModal')};
 $('linksClose').onclick=closeLinkModals;
 $('linksSettingsClose').onclick=closeLinkModals;
-$('linksSettingsBtn').onclick=async()=>{await loadSharedLinks();if(sharedIsAdmin){clearLinkEdit();linkNotice('');showLinkModal('sharedSettingsModal')}};
+$('linksSettingsBtn').onclick=async()=>{await loadSharedLinks();$('printFontSize').value=getPrintSize();$('printSizeMessage').textContent='Valget gjelder både utskrift og PDF, og lagres på denne enheten.';clearLinkEdit();linkNotice('');showLinkModal('sharedSettingsModal')};
 $('linkCancelEdit').onclick=clearLinkEdit;
 $('linkForm').onsubmit=async e=>{
  e.preventDefault();if(!sharedIsAdmin)return;
