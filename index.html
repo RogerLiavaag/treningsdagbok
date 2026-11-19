@@ -48,7 +48,7 @@
 <section class="tool-group tool-group-plan" aria-label="Treningsvalg">
 <div class="tool-group-title">Treningsvalg</div>
 <div class="tool-group-items">
-<label class="tool-field">Parti<select id="party"><option>Viderekomne</option><option>Voksne</option><option>Ungdom</option><option>Barn</option></select></label>
+<select id="party" hidden aria-hidden="true" tabindex="-1"><option>Viderekomne</option><option>Voksne</option><option>Ungdom</option><option>Barn</option></select>
 <label class="tool-field">Treningsdato (DD.MM.YYYY)<span class="date-entry"><input type="text" id="dateDisplay" inputmode="numeric" placeholder="DD.MM.YYYY" maxlength="10" aria-label="Dato DD.MM.YYYY"><input type="date" id="date" hidden aria-hidden="true" tabindex="-1"><button type="button" class="calendar-trigger" id="calendarToggle" aria-label="Åpne kalender med lagrede treningsplaner" aria-expanded="false" aria-controls="calendarPopover">📅</button><div class="calendar-popover" id="calendarPopover" hidden><div class="calendar-top"><button type="button" id="calendarPrev" aria-label="Forrige måned">←</button><strong id="calendarMonth"></strong><button type="button" id="calendarNext" aria-label="Neste måned">→</button></div><div class="calendar-grid" id="calendarGrid"></div><div class="calendar-hint">Blå prikk = lagret treningsplan for valgt parti</div></div></span></label>
 <div class="tool-buttons"><button id="today">I dag</button><button id="new">Ny økt</button></div>
 </div>
@@ -181,8 +181,7 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape')calendarClos
 function switchParty(nextParty){
  const valid=['Voksne','Viderekomne','Ungdom','Barn'];
  if(!valid.includes(nextParty)||nextParty===lastKey?.split('|')[0])return;
- // lastKey peker på planen som faktisk vises – også når nedtrekksmenyen
- // allerede har endret verdi før change-hendelsen.
+ // lastKey peker på planen som faktisk vises før vi bytter parti.
  const outgoing=lastKey;
  capture(); // Lagrer lokalt straks og køer lagring til Supabase før byttet.
  $('party').value=nextParty;
@@ -191,7 +190,6 @@ function switchParty(nextParty){
  if(outgoing && data[outgoing])$('saved').textContent=data[id()]?'Plan åpnet · forrige plan lagres automatisk':'Ny plan · forrige plan lagres automatisk';
 }
 document.querySelectorAll('[data-party]').forEach(btn=>btn.onclick=()=>switchParty(btn.dataset.party));
-$('party').addEventListener('change',()=>switchParty($('party').value));
 $('date').addEventListener('change',()=>{clearTimeout(timer);capture();prevIndex=0;render()});
 $('dateDisplay').addEventListener('change',()=>{const d=parseDate($('dateDisplay').value);if(!d){alert('Skriv dato som DD.MM.YYYY, for eksempel 18.11.2026');$('dateDisplay').value=fmt($('date').value);return}capture();$('date').value=d;prevIndex=0;render()});
 $('prevOlder').onclick=()=>{if(prevIndex<previousKeys().length-1){prevIndex++;renderPrevious()}};
