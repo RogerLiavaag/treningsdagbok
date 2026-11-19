@@ -17,6 +17,13 @@
 .link-editor-actions{display:flex;flex-wrap:wrap;gap:6px}
 .link-muted{color:#68788d}.print-settings{padding:14px;background:#f6f8fb;border:1px solid #dce3eb;border-radius:9px;margin:12px 0 20px}.print-settings label{font-weight:600;display:block;margin:10px 0 6px}.print-settings select{min-width:210px}.admin-links-settings[hidden]{display:none!important}
 #printSheet{display:none}
+#printSheet.print-measuring{display:block!important;position:absolute;left:-20000px;top:0;visibility:hidden;width:176mm;max-width:176mm;height:auto;background:#fff;color:#111;font-family:Arial,sans-serif;font-size:var(--print-body-size,18pt);line-height:1.4}
+#printSheet.print-measuring h1{font-size:var(--print-title-size,24pt);margin:0 0 5mm}
+#printSheet.print-measuring .print-meta{font-size:var(--print-meta-size,16pt);margin-bottom:10mm;border-bottom:2px solid #222;padding-bottom:5mm}
+#printSheet.print-measuring section{margin:0 0 9mm}
+#printSheet.print-measuring h2{font-size:var(--print-heading-size,19pt);margin:0 0 2mm}
+#printSheet.print-measuring .print-body{white-space:pre-wrap;overflow-wrap:anywhere}
+#printSheet.print-measuring .print-body ul{list-style:disc;padding-left:1.2em}
 @media print{
  @page{size:A4 portrait;margin:17mm}
  body{background:white;color:#111;font-family:Arial,sans-serif}
@@ -49,7 +56,7 @@
 <div id="sharedLinksModal" class="link-modal-bg" role="dialog" aria-modal="true" aria-labelledby="linksHeading">
 <div class="link-dialog"><div class="top-row"><h2 id="linksHeading">Felles lenker</h2><button type="button" id="linksClose" aria-label="Lukk">✕ Lukk</button></div><p class="link-muted">Felles ressurser for alle registrerte brukere. Lenkene åpnes i en ny fane.</p><div id="linksList" aria-live="polite"></div></div></div>
 <div id="sharedSettingsModal" class="link-modal-bg" role="dialog" aria-modal="true" aria-labelledby="linksSettingsHeading">
-<div class="link-dialog"><div class="top-row"><h2 id="linksSettingsHeading">Innstillinger</h2><button type="button" id="linksSettingsClose" aria-label="Lukk">✕ Lukk</button></div><div class="print-settings"><h3>Utskrift og PDF</h3><label for="printFontSize">Skriftstørrelse på treningsplanen</label><select id="printFontSize"><option value="small">Liten (15 pkt)</option><option value="medium">Middels (19 pkt – som før)</option><option value="large">Stor (23 pkt)</option></select><p class="link-muted" id="printSizeMessage">Valget gjelder både utskrift og PDF.</p></div>
+<div class="link-dialog"><div class="top-row"><h2 id="linksSettingsHeading">Innstillinger</h2><button type="button" id="linksSettingsClose" aria-label="Lukk">✕ Lukk</button></div><div class="print-settings"><h3>Utskrift og PDF</h3><label for="printFontSize">Skriftstørrelse på treningsplanen</label><select id="printFontSize"><option value="small">Liten (14 pkt)</option><option value="medium">Middels (18 pkt – standard)</option><option value="large">Stor (22 pkt)</option><option value="fit">Tilpass til én A4-side</option></select><p class="link-muted" id="printSizeMessage">Valget gjelder både utskrift og PDF.</p></div>
 <div id="adminLinksSettings" class="admin-links-settings" hidden><h3>Felles lenker</h3><p class="link-muted">Bare administrator kan legge til, redigere, flytte og slette lenker.</p>
 <form id="linkForm" class="link-form"><input type="hidden" id="linkEditId"><label>Navn på lenken<input id="linkTitle" maxlength="140" required placeholder="F.eks. Instruksjonsvideoer"></label><label>Nettadresse (https://)<input id="linkUrl" type="url" required maxlength="2048" placeholder="https://..."></label><label>Beskrivelse (valgfritt)<input id="linkDescription" maxlength="300" placeholder="Kort beskrivelse"></label><div class="actions"><button type="submit" class="primary" id="linkSave">Lagre lenke</button><button type="button" id="linkCancelEdit">Avbryt redigering</button></div></form><p id="linkSettingsMessage" role="status" class="link-muted"></p><h3>Eksisterende lenker</h3><div id="linkSettingsList"></div></div></div></div>
 <article id="printSheet" aria-label="Utskriftsversjon av valgt treningsplan">
@@ -122,15 +129,69 @@ fields.forEach(f=>$(f).addEventListener('input',()=>{$('saved').textContent='Lag
 $('save').onclick=()=>{capture();render()};
 $('delete').onclick=()=>{if(data[id()]&&confirm('Slette denne treningsøkten?')){delete data[id()];persist();queueCloud(id(),null);render()}};
 $('copy').onclick=()=>{let p=previous();if(!p)return;if(fields.some(f=>hasText($(f)))&&!confirm('Erstatte innholdet med forrige trening?'))return;fields.forEach(f=>$(f).innerHTML=displayHTML(data[p],f));capture();render()};
-const PRINT_SIZES={small:{body:'15pt',title:'22pt',meta:'14pt',heading:'17pt'},medium:{body:'19pt',title:'25pt',meta:'17pt',heading:'20pt'},large:{body:'23pt',title:'29pt',meta:'20pt',heading:'24pt'}};
+const PRINT_SIZES={
+ small:{body:14,title:20,meta:13,heading:16},
+ medium:{body:18,title:24,meta:16,heading:19},
+ large:{body:22,title:28,meta:19,heading:23},
+ fit:null
+};
 function printPreferenceKey(){return 'jj-print-size-v1-'+(cloudUser?.id||'local')}
 function getPrintSize(){const value=localStorage.getItem(printPreferenceKey());return Object.prototype.hasOwnProperty.call(PRINT_SIZES,value)?value:'medium'}
-function setPrintSize(size){if(!PRINT_SIZES[size])return;localStorage.setItem(printPreferenceKey(),size);applyPrintSize()}
-function applyPrintSize(){const size=PRINT_SIZES[getPrintSize()],sheet=$('printSheet');sheet.style.setProperty('--print-body-size',size.body);sheet.style.setProperty('--print-title-size',size.title);sheet.style.setProperty('--print-meta-size',size.meta);sheet.style.setProperty('--print-heading-size',size.heading)}
-$('printFontSize').onchange=()=>{setPrintSize($('printFontSize').value);$('printSizeMessage').textContent='Lagret! Dette valget brukes ved neste utskrift og PDF.'};
-function preparePrint(){applyPrintSize();capture();$('printParty').textContent=$('party').value;$('printDate').textContent=fmt($('date').value);for(let f of fields){let target=$('print'+f.charAt(0).toUpperCase()+f.slice(1));target.innerHTML=hasText($(f))?cleanHTML($(f).innerHTML):'–';target.classList.toggle('print-empty',!hasText($(f)))}$('printNoteSection').style.display=hasText($('note'))?'block':'none'}
-$('printBtn').onclick=()=>{preparePrint();window.print()};
-$('pdfBtn').onclick=()=>{preparePrint();alert('I utskriftsvinduet: Velg «Lagre som PDF» som skriver/mål, og trykk Lagre. PDF-en bruker skriftstørrelsen du valgte under Innstillinger.');window.print()};
+function setPrintSize(size){if(!Object.prototype.hasOwnProperty.call(PRINT_SIZES,size))return;localStorage.setItem(printPreferenceKey(),size);applyPrintSize()}
+function setPrintPointSize(body){
+ const sheet=$('printSheet');
+ // Overskriftene følger skriftstørrelsen, så hele utskriften kan tilpasses.
+ sheet.style.setProperty('--print-body-size',body+'pt');
+ sheet.style.setProperty('--print-title-size',Math.round(body*1.32)+'pt');
+ sheet.style.setProperty('--print-meta-size',Math.max(9,Math.round(body*.88))+'pt');
+ sheet.style.setProperty('--print-heading-size',Math.max(10,Math.round(body*1.08))+'pt');
+}
+function applyPrintSize(){
+ const choice=getPrintSize();
+ if(choice==='fit'){setPrintPointSize(22);return}
+ const choiceSize=PRINT_SIZES[choice];setPrintPointSize(choiceSize?choiceSize.body:18);
+}
+function fitPrintToA4(){
+ const sheet=$('printSheet');
+ // Siden er A4 med 17 mm marg på hver side: 176 x 263 mm netto.
+ const gauge=document.createElement('div');gauge.style.cssText='position:absolute;visibility:hidden;height:263mm;width:1px;pointer-events:none';
+ document.body.append(gauge);
+ const usableHeight=gauge.getBoundingClientRect().height*0.965; // litt sikkerhetsmargin for printere
+ gauge.remove();
+ sheet.classList.add('print-measuring');
+ let fitted=false,selected=9;
+ try{
+  for(let pt=22;pt>=9;pt-=.5){
+   setPrintPointSize(pt);
+   if(sheet.getBoundingClientRect().height<=usableHeight){fitted=true;selected=pt;break}
+  }
+ }finally{sheet.classList.remove('print-measuring')}
+ return {fitted,selected};
+}
+$('printFontSize').onchange=()=>{setPrintSize($('printFontSize').value);$('printSizeMessage').textContent='Lagret! Valget brukes ved neste utskrift og PDF.'};
+function preparePrint(){
+ capture();
+ $('printParty').textContent=$('party').value;
+ $('printDate').textContent=fmt($('date').value);
+ for(const f of fields){
+  const target=$('print'+f.charAt(0).toUpperCase()+f.slice(1));
+  target.innerHTML=hasText($(f))?cleanHTML($(f).innerHTML):'–';
+  target.classList.toggle('print-empty',!hasText($(f)));
+ }
+ $('printNoteSection').style.display=hasText($('note'))?'block':'none';
+ applyPrintSize();
+ if(getPrintSize()==='fit')return fitPrintToA4();
+ return {fitted:true,selected:PRINT_SIZES[getPrintSize()].body};
+}
+function startPrint(asPDF){
+ const result=preparePrint();
+ if(asPDF)alert('I utskriftsvinduet: Velg «Lagre som PDF» som skriver/mål, og trykk Lagre.');
+ if(!result.fitted)alert('Treningsplanen er for lang til å få plass på én A4-side med lesbar skrift. Utskriften kan bli på flere sider. Du kan korte ned teksten eller velge en fast størrelse under Innstillinger.');
+ window.print();
+}
+$('printBtn').onclick=()=>startPrint(false);
+$('pdfBtn').onclick=()=>startPrint(true);
+// Utskriftsdialogen kan trigges med Ctrl+P. Bruk samme formatering da.
 window.addEventListener('beforeprint',preparePrint);
 $('export').onclick=()=>{capture();let url=URL.createObjectURL(new Blob([JSON.stringify({version:1,exported:new Date().toISOString(),sessions:data},null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='ju-jitsu-treningsdagbok-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)};
 $('importBtn').onclick=()=>$('import').click();
