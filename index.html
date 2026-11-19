@@ -113,11 +113,19 @@ document.querySelectorAll('[data-party]').forEach(btn=>btn.setAttribute('aria-pr
 $('partyHeading').textContent='TRENINGSPLAN – '+$('party').value.toLocaleUpperCase('nb-NO');
 $('partyDateHeading').textContent=fmt($('date').value);prevIndex=Math.min(prevIndex,Math.max(0,keys.length-1));let p=keys[prevIndex],old=data[p]||{};$('dateDisplay').value=fmt($('date').value);$('prevOlder').disabled=prevIndex>=keys.length-1;$('prevNewer').disabled=prevIndex<=0;$('prevCount').textContent=keys.length?(prevIndex+1)+' av '+keys.length:'Ingen tidligere økter';$('currentParty').textContent=$('party').value;$('currentTitle').textContent=fmt($('date').value);fields.forEach(f=>$(f).innerHTML=displayHTML(e,f));$('saved').textContent=e.updated?'Tidligere lagret':'Ny økt';$('prevTitle').textContent=p?fmt(p.split('|')[1]):'Ingen tidligere trening';[['prevWarm','warm'],['prevMain','main'],['prevEnd','end'],['prevNote','note']].forEach(([a,b])=>$(a).innerHTML=old[b]?displayHTML(old,b):'Ikke registrert');$('copy').disabled=!p;renderHistory();renderPlanNavigation()}
 function switchParty(nextParty){
- if(!['Voksne','Viderekomne','Ungdom','Barn'].includes(nextParty)||nextParty===$('party').value)return;
- clearTimeout(timer);capture();$('party').value=nextParty;prevIndex=0;render();
+ const valid=['Voksne','Viderekomne','Ungdom','Barn'];
+ if(!valid.includes(nextParty)||nextParty===lastKey?.split('|')[0])return;
+ // lastKey peker på planen som faktisk vises – også når nedtrekksmenyen
+ // allerede har endret verdi før change-hendelsen.
+ const outgoing=lastKey;
+ capture(); // Lagrer lokalt straks og køer lagring til Supabase før byttet.
+ $('party').value=nextParty;
+ prevIndex=0;
+ render();
+ if(outgoing && data[outgoing])$('saved').textContent=data[id()]?'Plan åpnet · forrige plan lagres automatisk':'Ny plan · forrige plan lagres automatisk';
 }
 document.querySelectorAll('[data-party]').forEach(btn=>btn.onclick=()=>switchParty(btn.dataset.party));
-$('party').addEventListener('change',()=>{clearTimeout(timer);capture();prevIndex=0;render()});
+$('party').addEventListener('change',()=>switchParty($('party').value));
 $('date').addEventListener('change',()=>{clearTimeout(timer);capture();prevIndex=0;render()});
 $('dateDisplay').addEventListener('change',()=>{const d=parseDate($('dateDisplay').value);if(!d){alert('Skriv dato som DD.MM.YYYY, for eksempel 18.11.2026');$('dateDisplay').value=fmt($('date').value);return}capture();$('date').value=d;prevIndex=0;render()});
 $('prevOlder').onclick=()=>{if(prevIndex<previousKeys().length-1){prevIndex++;renderPrevious()}};
@@ -251,8 +259,8 @@ function queueCloud(key,value){
   }else{
    await cloudRequest('/rest/v1/training_sessions?party=eq.'+encodeURIComponent(party)+'&training_date=eq.'+date,{method:'DELETE',token});
   }
-  $('saved').textContent='Lagret i skyen ✓';
- }).catch(error=>{$('saved').textContent='Kun lokalt – skyfeil';authMessage('Kunne ikke lagre i databasen: '+error.message,true);throw error});
+  if(lastKey===key)$('saved').textContent='Lagret i skyen ✓';
+ }).catch(error=>{if(lastKey===key)$('saved').textContent='Kun lokalt – skyfeil';authMessage('Kunne ikke lagre i databasen: '+error.message,true);throw error});
 }
 async function cloudLoad(){
  const token=await cloudAccessToken();
