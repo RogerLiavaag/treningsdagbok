@@ -54,7 +54,13 @@
 <div class="section"><h3>Merknad etter trening</h3><div class="toolbar" role="toolbar" aria-label="Tekstformatering"><button type="button" data-format="bold" data-target="note" title="Fet skrift (Ctrl+B)"><b>Fet</b></button><button type="button" data-format="insertUnorderedList" data-target="note" title="Punktliste">• Liste</button><label class="color-palette">Tekstfarge <select class="color-select" data-color-select="note" aria-label="Velg tekstfarge"><option value="">Velg farge…</option><option value="#000000">Sort (standard)</option><option value="#a67c00">Gul</option><option value="#d97706">Oransje</option><option value="#15803d">Grønn</option><option value="#1d4ed8">Blå</option><option value="#79512f">Brun</option><option value="#b91c1c">Rød</option></select></label></div><div id="note" class="editor" contenteditable="true" spellcheck="false" lang="nb-NO" role="textbox" aria-multiline="true" data-placeholder="Hva rakk vi ikke? Hva bør følges opp?"></div></div>
 <div class="actions"><button class="primary" id="save">Lagre økten</button><button class="danger" id="delete">Slett økten</button><span class="muted" id="saved"></span></div></div></section></div>
 <section class="history"><h2>Tidligere lagrede treningsplaner</h2><p class="history-explainer">Velg en dato nedenfor for å åpne og redigere en tidligere treningsplan for det valgte partiet.</p><div id="history"></div></section></main><footer>Selvstendig testprosjekt, uten tilknytning til aajj.no eller Beltereg.</footer>
-<div class="modal-bg" id="modal"><div class="modal"><h2 id="modalTitle">Hurtigvalg</h2><p>Velg aktiviteter som skal legges inn i økten.</p><div class="options" id="options"></div><div class="modal-actions"><button id="cancel">Avbryt</button><button id="insert" class="primary">Legg til valgte</button></div></div></div>
+<div class="modal-bg" id="modal"><div class="modal"><h2 id="modalTitle">Hurtigvalg</h2><p>Velg aktiviteter som skal legges inn i økten.</p><div class="options" id="options"></div>
+<button type="button" id="quickEditToggle">⚙️ Administrer mine hurtigvalg</button>
+<div id="quickEditor" hidden style="margin:12px 0;padding:12px;border:1px solid #dce2e9;border-radius:8px">
+<p style="margin:0 0 8px;font-size:13px;color:#52647b">Disse valgene er personlige for din innlogging. Bruk «Endre» for å gi nytt navn.</p>
+<div id="quickEditList"></div>
+<form id="quickAddForm" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><input id="quickAddText" maxlength="180" required placeholder="Skriv nytt hurtigvalg" style="flex:1;min-width:140px"><button type="submit">+ Legg til</button></form>
+<p id="quickEditStatus" role="status" style="font-size:13px"></p></div><div class="modal-actions"><button id="cancel">Avbryt</button><button id="insert" class="primary">Legg til valgte</button></div></div></div>
 <div id="sharedLinksModal" class="link-modal-bg" role="dialog" aria-modal="true" aria-labelledby="linksHeading">
 <div class="link-dialog"><div class="top-row"><h2 id="linksHeading">Felles lenker</h2><button type="button" id="linksClose" aria-label="Lukk">✕ Lukk</button></div><p class="link-muted">Felles ressurser for alle registrerte brukere. Lenkene åpnes i en ny fane.</p><div id="linksList" aria-live="polite"></div></div></div>
 <div id="sharedSettingsModal" class="link-modal-bg" role="dialog" aria-modal="true" aria-labelledby="linksSettingsHeading">
@@ -71,7 +77,8 @@
 <script>
 (()=>{'use strict';
 const KEY='jj-dagbok-v1', $=id=>document.getElementById(id), fields=['warm','main','end','note'];
-const templates={warm:['Lett løping','Fallteknikk','Bevegelsesøvelser','Parøvelser','Reaksjonsøvelser','Mobilitet'],main:['Basisteknikker','Slag og spark','Kast og nedtagninger','Frigjøringer fra grep','Forsvarskombinasjoner','Holdegrep på bakken','Kontrollert sparring','Pensum til gradering'],end:['Kontrollert sparring','Lett uttøying','Oppsummering','Rolig nedtrapping','Spørsmål og repetisjon']};
+const DEFAULT_TEMPLATES={warm:['Lett løping','Fallteknikk','Bevegelsesøvelser','Parøvelser','Reaksjonsøvelser','Mobilitet'],main:['Basisteknikker','Slag og spark','Kast og nedtagninger','Frigjøringer fra grep','Forsvarskombinasjoner','Holdegrep på bakken','Kontrollert sparring','Pensum til gradering'],end:['Kontrollert sparring','Lett uttøying','Oppsummering','Rolig nedtrapping','Spørsmål og repetisjon']};
+let templates=structuredClone(DEFAULT_TEMPLATES);
 let data={},lastKey='',editing='',timer,prevIndex=0;
 try{data=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch{data={}}
 const today=()=>{let d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
@@ -224,7 +231,61 @@ document.querySelectorAll('[data-color-select]').forEach(menu=>{
  });
 });
 document.querySelectorAll('.editor').forEach(el=>el.addEventListener('paste',e=>{e.preventDefault();const plain=e.clipboardData.getData('text/plain');document.execCommand('insertText',false,plain)}));
-document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{editing=b.dataset.quick;$('modalTitle').textContent='Hurtigvalg – '+({warm:'Oppvarming',main:'Trening',end:'Avslutning'}[editing]);$('options').replaceChildren();templates[editing].forEach(item=>{let l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.value=item;l.append(c,document.createTextNode(item));$('options').append(l)});$('modal').style.display='flex'});
+document.querySelectorAll('[data-quick]').forEach(b=>b.onclick=()=>{editing=b.dataset.quick;$('modalTitle').textContent='Hurtigvalg – '+({warm:'Oppvarming',main:'Trening',end:'Avslutning'}[editing]);$('options').replaceChildren();renderQuickOptions();$('quickEditor').hidden=true;$('quickEditToggle').textContent='⚙️ Administrer mine hurtigvalg';quickStatus('');$('modal').style.display='flex'});
+function renderQuickList(){
+ const list=$('quickEditList');list.replaceChildren();
+ for(const item of (templates[editing]||[])){
+  const line=document.createElement('div');line.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #edf0f4';
+  const name=document.createElement('span');name.textContent=item;name.style.overflowWrap='anywhere';
+  const buttons=document.createElement('span');buttons.style.cssText='display:flex;gap:5px';
+  const edit=document.createElement('button');edit.type='button';edit.textContent='Endre';edit.onclick=async()=>{
+   const value=prompt('Endre hurtigvalget:',item);if(value===null)return;
+   const text=value.trim();if(!text||text.length>180){quickStatus('Navnet må være 1–180 tegn.',true);return}
+   const draft=structuredClone(templates);if(draft[editing].some(v=>v!==item&&v.toLowerCase()===text.toLowerCase())){quickStatus('Navnet finnes allerede.',true);return}
+   draft[editing][draft[editing].indexOf(item)]=text;await saveQuickChoices(draft);
+  };
+  const del=document.createElement('button');del.type='button';del.textContent='Slett';del.onclick=async()=>{
+   if(!confirm('Slette «'+item+'» fra dine hurtigvalg?'))return;
+   const draft=structuredClone(templates);draft[editing]=draft[editing].filter(v=>v!==item);await saveQuickChoices(draft);
+  };
+  buttons.append(edit,del);line.append(name,buttons);list.append(line);
+ }
+}
+function quickStatus(message,error=false){$('quickEditStatus').textContent=message;$('quickEditStatus').style.color=error?'#ae2929':'#276044'}
+function renderQuickOptions(){
+ const chosen=new Set([...$('options').querySelectorAll('input:checked')].map(c=>c.value));
+ $('options').replaceChildren();
+ for(const item of templates[editing]||[]){
+  const label=document.createElement('label'),cb=document.createElement('input');cb.type='checkbox';cb.value=item;cb.checked=chosen.has(item);
+  label.append(cb,document.createTextNode(item));$('options').append(label);
+ }
+ if(!templates[editing]?.length)$('options').textContent='Ingen hurtigvalg. Du kan legge til egne nedenfor.';
+}
+async function saveQuickChoices(draft){
+ if(!cloudUser){quickStatus('Du må logge inn først.',true);return}
+ try{
+  const token=await cloudAccessToken();
+  await cloudRequest('/rest/v1/user_quick_choices?on_conflict=user_id',{method:'POST',token,prefer:'resolution=merge-duplicates,return=minimal',body:{user_id:cloudUser.id,choices:draft,updated_at:new Date().toISOString()}});
+  templates=draft;renderQuickOptions();renderQuickList();quickStatus('Lagret for din konto ✓');
+ }catch(error){quickStatus('Kunne ikke lagre: '+error.message,true)}
+}
+async function loadQuickChoices(){
+ const token=await cloudAccessToken();
+ const rows=await cloudRequest('/rest/v1/user_quick_choices?select=choices&user_id=eq.'+encodeURIComponent(cloudUser.id),{token});
+ templates=structuredClone(DEFAULT_TEMPLATES);
+ if(rows?.length){const choices=rows[0].choices||{};for(const part of ['warm','main','end']){
+  if(Array.isArray(choices[part]))templates[part]=[...new Set(choices[part].filter(v=>typeof v==='string').map(v=>v.trim()).filter(v=>v&&v.length<=180))].slice(0,200);
+ }}
+}
+$('quickEditToggle').onclick=()=>{
+ $('quickEditor').hidden=!$('quickEditor').hidden;renderQuickList();
+ $('quickEditToggle').textContent=$('quickEditor').hidden?'⚙️ Administrer mine hurtigvalg':'✓ Skjul redigering';
+};
+$('quickAddForm').onsubmit=async e=>{
+ e.preventDefault();const value=$('quickAddText').value.trim();if(!value)return;
+ if(templates[editing].some(v=>v.toLowerCase()===value.toLowerCase())){quickStatus('Dette valget finnes allerede.',true);return}
+ const draft=structuredClone(templates);draft[editing].push(value);await saveQuickChoices(draft);if(templates[editing].includes(value))$('quickAddText').value='';
+};
 const close=()=>$('modal').style.display='none';$('cancel').onclick=close;$('modal').onclick=e=>{if(e.target===$('modal'))close()};$('insert').onclick=()=>{let chosen=[...$('options').querySelectorAll('input:checked')].map(x=>x.value);if(chosen.length){const el=$(editing);let prefix=hasText(el)?'<br>':'';el.innerHTML+=prefix+chosen.map(x=>escapeText(x)).join('<br>');capture();render()}close()};
 // Supabase-tilkobling. Kun publiserbar nøkkel brukes i nettleseren.
 const CLOUD_URL='https://fwjckmgewspevokemchn.supabase.co';
@@ -268,6 +329,7 @@ async function cloudLoad(){
  const token=await cloudAccessToken();
  const rows=await cloudRequest('/rest/v1/training_sessions?select=party,training_date,warm,main,end,note,format,updated_at&order=training_date.desc&limit=10000',{token});
  await loadSharedLinks();
+ await loadQuickChoices();
  const localBefore={...data};
  if(Object.keys(localBefore).length&& !localStorage.getItem('jj-dagbok-precloud-backup'))localStorage.setItem('jj-dagbok-precloud-backup',JSON.stringify(localBefore));
  data={};for(const row of rows){data[recordKey(row)]={warm:row.warm,main:row.main,end:row.end,note:row.note,format:row.format,updated:row.updated_at}}
@@ -305,7 +367,7 @@ $('authForm').onsubmit=event=>{
 $('authMode').onchange=()=>{$('authSubmit').textContent=$('authMode').value==='signup'?'Opprett konto':'Logg inn';authMessage('')};
 $('cloudLogout').onclick=async()=>{
  try{if(cloudSession)await cloudRequest('/auth/v1/logout',{method:'POST',token:await cloudAccessToken()})}catch{}
- cloudSession=null;cloudUser=null;cloudReady=false;sharedLinks=[];sharedIsAdmin=false;localStorage.removeItem(CLOUD_SESSION_KEY);$('adminLinksSettings').hidden=true;closeLinkModals();
+ cloudSession=null;cloudUser=null;cloudReady=false;sharedLinks=[];sharedIsAdmin=false;templates=structuredClone(DEFAULT_TEMPLATES);localStorage.removeItem(CLOUD_SESSION_KEY);$('adminLinksSettings').hidden=true;closeLinkModals();
  data={};lastKey='';render();$('authPanel').hidden=false;$('cloudStatus').hidden=true;document.body.classList.add('cloud-locked');authMessage('Du er logget ut.');
 };
 $('importLocal').onclick=async()=>{
